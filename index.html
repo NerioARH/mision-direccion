@@ -1,0 +1,2475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Misión Dirección — Juego de Memoria y Estrategia</title>
+  <style>
+    :root {
+      --bg-sky: #3b9eeb;
+      --bg-sky-dark: #1d72b8;
+      --team-a: #1976d2;
+      --team-a-light: #e3f2fd;
+      --team-a-glow: rgba(25, 118, 210, 0.45);
+      --team-b: #e53935;
+      --team-b-light: #ffebee;
+      --team-b-glow: rgba(229, 57, 53, 0.45);
+      --gold: #ffb300;
+      --gold-dark: #f57f17;
+      --surface-white: #ffffff;
+      --text-dark: #0f172a;
+      --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: radial-gradient(circle at 50% 15%, #4facfe 0%, #0072ff 100%);
+      color: var(--text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Ambient network background */
+    .bg-network {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.2;
+      background-image: radial-gradient(#ffffff 2px, transparent 2px), radial-gradient(#ffffff 1px, transparent 1px);
+      background-size: 48px 48px;
+      background-position: 0 0, 24px 24px;
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Top Floating Bar */
+    .top-controls {
+      position: fixed;
+      top: 14px;
+      right: 18px;
+      display: flex;
+      gap: 10px;
+      z-index: 900;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
+      font-size: 1.25rem;
+    }
+
+    .icon-btn:hover {
+      transform: scale(1.08);
+      background: #ffffff;
+    }
+
+    /* SCREENS CONTAINER */
+    .screen {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* =========================================
+       1. START SCREEN
+       ========================================= */
+    #screen-start {
+      justify-content: flex-start;
+      padding-top: 20px;
+      padding-bottom: 30px;
+    }
+
+    .hero-card {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 28px;
+      padding: 30px 40px;
+      max-width: 960px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0, 30, 80, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      animation: fadeInScale 0.5s ease;
+    }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.95) translateY(15px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .game-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      color: #0369a1;
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 8px 20px;
+      border-radius: 50px;
+      margin-bottom: 10px;
+      border: 1px solid #7dd3fc;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .hero-title {
+      font-size: 2.7rem;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+      line-height: 1.15;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .hero-art-container {
+      width: 100%;
+      max-width: 720px;
+      height: 230px;
+      position: relative;
+      margin-bottom: 20px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #3aa4f7 0%, #227bd6 100%);
+      overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15), 0 10px 25px rgba(37, 99, 235, 0.25);
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    .rule-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease;
+    }
+
+    .rule-box:hover {
+      transform: translateY(-2px);
+      background: #f0f9ff;
+      border-color: #38bdf8;
+    }
+
+    .rule-icon {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+
+    .rule-title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .rule-desc {
+      font-size: 0.8rem;
+      color: #64748b;
+      line-height: 1.35;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffb300 0%, #ff8f00 100%);
+      color: #1a1a1a;
+      font-weight: 800;
+      font-size: 1.3rem;
+      padding: 15px 44px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(255, 143, 0, 0.45);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 30px rgba(255, 143, 0, 0.6);
+      background: linear-gradient(135deg, #ffc107 0%, #ffa000 100%);
+    }
+
+    /* =========================================
+       2. GAME BOARD SCREEN
+       ========================================= */
+    #screen-game {
+      padding: 12px 18px 18px 18px;
+      justify-content: flex-start;
+      gap: 10px;
+      max-width: 1440px;
+      margin: 0 auto;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    /* Top HUD Dashboard */
+    .game-dashboard {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .team-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 16px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 2px solid transparent;
+      transition: all 0.25s ease;
+    }
+
+    .team-badge.team-a-active {
+      background: var(--team-a-light);
+      border-color: var(--team-a);
+      box-shadow: 0 0 20px var(--team-a-glow);
+      transform: scale(1.04);
+    }
+
+    .team-badge.team-b-active {
+      background: var(--team-b-light);
+      border-color: var(--team-b);
+      box-shadow: 0 0 20px var(--team-b-glow);
+      transform: scale(1.04);
+    }
+
+    .team-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .team-a-avatar { background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); }
+    .team-b-avatar { background: linear-gradient(135deg, #e53935 0%, #c62828 100%); }
+
+    .team-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .team-name {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .team-score {
+      font-size: 1.45rem;
+      font-weight: 900;
+      line-height: 1;
+      color: #0f172a;
+    }
+
+    .turn-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 12px;
+      color: #fff;
+      display: none;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .team-a-active .turn-tag {
+      display: inline-block;
+      background: var(--team-a);
+    }
+
+    .team-b-active .turn-tag {
+      display: inline-block;
+      background: var(--team-b);
+    }
+
+    /* Central Timer Hub */
+    .center-timer-hub {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 440px;
+    }
+
+    .timer-action-msg {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .timer-bar-wrap {
+      width: 100%;
+      height: 11px;
+      background: #e2e8f0;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #cbd5e1;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+      border-radius: 20px;
+      transition: width 0.1s linear;
+    }
+
+    .timer-bar-fill.urgent {
+      background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);
+      animation: pulseUrgent 0.6s infinite alternate;
+    }
+
+    @keyframes pulseUrgent {
+      from { opacity: 0.8; }
+      to { opacity: 1; filter: brightness(1.2); }
+    }
+
+    .timer-footer {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 3px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .btn-shuffle {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .btn-shuffle:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.5);
+    }
+
+    .btn-shuffle:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .game-toast {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(15, 23, 42, 0.94);
+      color: #fff;
+      padding: 8px 22px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+      z-index: 500;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .game-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* =========================================
+       BOARD GRID: 20 CARDS (5 COLUMNS x 4 ROWS)
+       ========================================= */
+    .board-container {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 0;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 14px;
+      width: 100%;
+      max-width: 1360px;
+      height: 100%;
+      max-height: calc(100vh - 100px);
+      min-height: 520px;
+    }
+
+    /* MEMORY CARD 3D FLIP CONTAINER */
+    .card-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      perspective: 1200px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+    }
+
+    .card-wrap:hover:not(.flipped):not(.matched) .card-inner {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
+    }
+
+    .card-wrap:focus-visible .card-inner {
+      outline: 4px solid #facc15;
+      outline-offset: 3px;
+    }
+
+    .card-wrap.flipped .card-inner,
+    .card-wrap.matched .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    /* CARD FACES */
+    .card-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* CARD BACK (Initial hidden state) */
+    .card-back {
+      background: radial-gradient(circle at 50% 35%, #1e4570 0%, #0e2038 100%);
+      border: 3.5px solid #3b82f6;
+      color: #fff;
+      transform: rotateY(0deg);
+      z-index: 2;
+      padding: 8px;
+    }
+
+    .card-back-pattern {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px),
+        radial-gradient(rgba(255, 215, 0, 0.2) 1.5px, transparent 1.5px);
+      background-size: 16px 16px;
+      background-position: 0 0, 8px 8px;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-back-emblem {
+      width: 62px;
+      height: 62px;
+      z-index: 2;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+      transition: transform 0.3s ease;
+    }
+
+    .card-wrap:hover .card-back-emblem {
+      transform: scale(1.08) rotate(5deg);
+    }
+
+    .card-back-text {
+      margin-top: 6px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #93c5fd;
+      z-index: 2;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    /* CARD FRONT (Huge classroom visibility, small crisp text) */
+    .card-front {
+      background: #ffffff;
+      border: 3.5px solid #94a3b8;
+      transform: rotateY(180deg);
+      z-index: 1;
+      padding: 3px 4px 3px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-wrap.flipped .card-front,
+    .card-wrap.matched .card-front {
+      z-index: 5;
+      opacity: 1;
+    }
+
+    .card-wrap.flipped .card-back,
+    .card-wrap.matched .card-back {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .card-front-tag {
+      font-size: 0.50rem;
+      font-weight: 800;
+      color: #0284c7;
+      background: #f0f9ff;
+      padding: 0 6px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid #bae6fd;
+      flex-shrink: 0;
+      margin-top: 1px;
+      line-height: 1.2;
+    }
+
+    .card-illustration-wrap {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1px 2px;
+      min-height: 0;
+    }
+
+    .card-svg-icon {
+      width: 100%;
+      max-width: 180px;
+      height: 100%;
+      max-height: 114px;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+    }
+
+    .card-concept-name {
+      font-size: 0.70rem;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      line-height: 1.15;
+      padding: 1px 2px;
+      letter-spacing: -0.1px;
+      flex-shrink: 0;
+      width: 100%;
+      word-break: normal;
+      margin-bottom: 2px;
+    }
+
+    /* MATCHED CARDS STYLING */
+    .card-wrap.matched-team-a .card-front {
+      border: 3.5px solid var(--team-a);
+      background: linear-gradient(180deg, #ffffff 60%, #e3f2fd 100%);
+      box-shadow: 0 0 16px rgba(25, 118, 210, 0.35);
+    }
+
+    .card-wrap.matched-team-b .card-front {
+      border: 3.5px solid var(--team-b);
+      background: linear-gradient(180deg, #ffffff 60%, #ffebee 100%);
+      box-shadow: 0 0 16px rgba(229, 57, 53, 0.35);
+    }
+
+    .match-owner-seal {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      border: 1.5px solid #fff;
+      z-index: 10;
+    }
+
+    .matched-team-a .match-owner-seal { background: var(--team-a); }
+    .matched-team-b .match-owner-seal { background: var(--team-b); }
+
+    /* =========================================
+       SHUFFLE ANIMATION OVERLAY
+       ========================================= */
+    .shuffle-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 600;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+    }
+
+    .shuffle-overlay.active { display: flex; }
+
+    .shuffle-stage {
+      width: 220px;
+      height: 220px;
+      position: relative;
+      perspective: 800px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shuffle-card-ghost {
+      position: absolute;
+      width: 90px;
+      height: 120px;
+      background: radial-gradient(circle at 50% 35%, #1e4570 0%, #0e2038 100%);
+      border: 3px solid #60a5fa;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      transition: transform 0.4s ease;
+    }
+
+    .shuffle-text {
+      color: #ffffff;
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-top: 24px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* =========================================
+       MODAL: MOMENTO RETO (ONLY "Momento reto")
+       ========================================= */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.active { display: flex; }
+
+    .reto-dialog {
+      background: #ffffff;
+      border-radius: 32px;
+      max-width: 540px;
+      width: 100%;
+      padding: 50px 36px 42px 36px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      border: 4px solid #f59e0b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      animation: bounceIn 0.45s ease;
+    }
+
+    @keyframes bounceIn {
+      from { opacity: 0; transform: scale(0.85) translateY(35px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .reto-star-badge {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.5);
+      margin-top: -95px;
+      margin-bottom: 24px;
+      border: 4px solid #ffffff;
+      animation: pulseStar 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulseStar {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08) rotate(5deg); }
+    }
+
+    /* MANDATED TITLE: ONLY "MOMENTO RETO" IN BIG */
+    .reto-header-title {
+      font-size: 3.4rem;
+      font-weight: 900;
+      color: #d97706;
+      letter-spacing: 0.5px;
+      margin-bottom: 32px;
+      text-transform: uppercase;
+      line-height: 1.05;
+      text-shadow: 0 3px 12px rgba(217, 119, 6, 0.25);
+    }
+
+    .btn-reto-continue {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-size: 1.35rem;
+      font-weight: 800;
+      padding: 16px 52px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.45);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-reto-continue:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 30px rgba(16, 185, 129, 0.6);
+      background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+    }
+
+    /* CONFIRM SHUFFLE DIALOG */
+    .confirm-dialog {
+      background: #ffffff;
+      border-radius: 24px;
+      max-width: 480px;
+      width: 100%;
+      padding: 30px 34px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+      border: 2px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .confirm-icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .confirm-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .confirm-desc { font-size: 0.95rem; color: #64748b; margin-bottom: 22px; line-height: 1.45; }
+    .confirm-btn-row { display: flex; gap: 12px; width: 100%; }
+
+    .btn-modal-cancel {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .btn-modal-cancel:hover { background: #f1f5f9; }
+
+    .btn-modal-confirm {
+      flex: 1.2;
+      padding: 12px;
+      border: none;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #fff;
+      font-weight: 800;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+    }
+
+    /* =========================================
+       3. FINAL VICTORY SCREEN
+       ========================================= */
+    #screen-victory { padding: 30px 20px; }
+
+    .victory-card {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 30px;
+      padding: 40px 45px;
+      max-width: 760px;
+      width: 100%;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      border: 3px solid #ffd54f;
+    }
+
+    .victory-trophy { font-size: 4.2rem; margin-bottom: 10px; }
+    .victory-title { font-size: 2.5rem; font-weight: 900; color: #0f172a; margin-bottom: 8px; }
+
+    .winner-announcement {
+      font-size: 1.7rem;
+      font-weight: 900;
+      margin-bottom: 22px;
+      padding: 10px 26px;
+      border-radius: 50px;
+      display: inline-block;
+    }
+
+    .winner-announcement.winner-a {
+      color: #1565c0;
+      background: #e3f2fd;
+      border: 2px solid #90caf9;
+    }
+
+    .winner-announcement.winner-b {
+      color: #c62828;
+      background: #ffebee;
+      border: 2px solid #ef9a9a;
+    }
+
+    .winner-announcement.winner-tie {
+      color: #7c3aed;
+      background: #f3e8ff;
+      border: 2px solid #d8b4fe;
+    }
+
+    .final-challenge-card {
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 3px dashed #d97706;
+      border-radius: 20px;
+      padding: 16px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #92400e;
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.2);
+      animation: pulseChallenge 1.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseChallenge {
+      from { transform: scale(1); }
+      to { transform: scale(1.025); box-shadow: 0 10px 28px rgba(217, 119, 6, 0.35); }
+    }
+
+    .final-scoreboards {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    .final-team-card {
+      flex: 1;
+      padding: 20px;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid transparent;
+    }
+
+    .final-team-card.team-a { background: #f0f7ff; border-color: #93c5fd; }
+    .final-team-card.team-b { background: #fef2f2; border-color: #fca5a5; }
+
+    .final-team-name { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+    .final-team-points { font-size: 3.2rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .final-team-sub { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+    .victory-total-note { font-size: 1.05rem; font-weight: 700; color: #475569; margin-bottom: 26px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+      }
+      .rules-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 650px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(10, 1fr);
+        height: auto;
+        min-height: 1400px;
+      }
+      .game-dashboard { flex-direction: column; gap: 10px; }
+      .hero-title { font-size: 2rem; }
+      .rules-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-network"></div>
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Sound Toggle -->
+  <div class="top-controls">
+    <button class="icon-btn" id="btn-toggle-sound" title="Activar/Silenciar Sonido" aria-label="Sonido">
+      <span id="sound-icon">🔊</span>
+    </button>
+  </div>
+
+  <!-- =========================================
+       SCREEN 1: START SCREEN (20 BARAJAS / 10 PAREJAS)
+       ========================================= -->
+  <section class="screen active" id="screen-start">
+    <div class="hero-card">
+      <div class="game-badge">
+        <span>⚡ Teoría Administrativa</span>
+        <span>•</span>
+        <span>20 Barajas (10 Parejas)</span>
+      </div>
+      <h1 class="hero-title">Misión <span>Dirección</span></h1>
+      <p class="hero-subtitle">Conecta conceptos. Dirige tu equipo. Supera el reto.</p>
+
+      <!-- Hero Boardroom Art with Central Lightbulb & Brain Network -->
+      <div class="hero-art-container">
+        <svg viewBox="0 0 720 230" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bulbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fff176" />
+              <stop offset="100%" stop-color="#fbc02d" />
+            </linearGradient>
+            <filter id="glowLight" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="6" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          <!-- Dotted network connection lines -->
+          <g stroke="rgba(255,255,255,0.65)" stroke-width="2.5" stroke-dasharray="6,6" fill="none">
+            <path d="M 360 75 C 280 40, 180 40, 120 60" />
+            <path d="M 360 75 C 240 60, 180 100, 80 105" />
+            <path d="M 360 75 C 440 40, 540 40, 600 60" />
+            <path d="M 360 75 C 480 60, 540 100, 640 105" />
+            <path d="M 360 75 C 320 20, 220 15, 200 35" />
+            <path d="M 360 75 C 400 20, 500 15, 520 35" />
+          </g>
+
+          <!-- Floating Badges / Concept Icons -->
+          <circle cx="120" cy="60" r="18" fill="#ffffff" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="120" y="66" font-size="16" text-anchor="middle">☁️</text>
+
+          <circle cx="80" cy="105" r="16" fill="#e0f2fe" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="80" y="111" font-size="14" text-anchor="middle">✉️</text>
+
+          <circle cx="200" cy="35" r="18" fill="#fef08a" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="200" y="41" font-size="15" text-anchor="middle">✈️</text>
+
+          <circle cx="260" cy="45" r="17" fill="#fed7aa" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="260" y="51" font-size="15" text-anchor="middle">🪙</text>
+
+          <circle cx="460" cy="45" r="17" fill="#e0e7ff" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="460" y="51" font-size="15" text-anchor="middle">🔍</text>
+
+          <circle cx="520" cy="35" r="18" fill="#dcfce7" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="520" y="41" font-size="15" text-anchor="middle">🔄</text>
+
+          <circle cx="600" cy="60" r="18" fill="#ffffff" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="600" y="66" font-size="16" text-anchor="middle">📊</text>
+
+          <circle cx="640" cy="105" r="16" fill="#fce7f3" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+          <text x="640" y="111" font-size="14" text-anchor="middle">📋</text>
+
+          <!-- Central Giant Glowing Bulb with Brain inside -->
+          <g transform="translate(360, 72)">
+            <circle cx="0" cy="0" r="45" fill="rgba(255, 241, 118, 0.35)" filter="url(#glowLight)"/>
+            <path d="M -30,-10 C -30,-30, -16,-42, 0,-42 C 16,-42, 30,-30, 30,-10 C 30,8, 16,20, 15,30 L -15,30 C -16,20, -30,8, -30,-10 Z" fill="url(#bulbGrad)" stroke="#f57f17" stroke-width="2.5" />
+            <rect x="-13" y="30" width="26" height="5.5" rx="2.5" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.5" />
+            <rect x="-10" y="36.5" width="20" height="4.5" rx="2" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.5" />
+            <g fill="#ffffff" stroke="#f57f17" stroke-width="1.5">
+              <path d="M -3,-26 C -13,-26 -20,-16 -20,-6 C -20,3 -13,8 -3,12 C -3,2 -3,-12 -3,-26 Z" opacity="0.95"/>
+              <path d="M -15,-10 C -9,-10 -7,-3 -13,1" fill="none" stroke="#f57f17" stroke-width="1.8"/>
+              <path d="M 3,-26 C 13,-26 20,-16 20,-6 C 20,3 13,8 3,12 C 3,2 3,-12 3,-26 Z" opacity="0.95"/>
+              <path d="M 15,-10 C 9,-10 7,-3 13,1" fill="none" stroke="#f57f17" stroke-width="1.8"/>
+            </g>
+          </g>
+
+          <!-- Boardroom Meeting Table & Team Members -->
+          <rect x="150" y="178" width="420" height="18" rx="5" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" />
+          <line x1="170" y1="196" x2="170" y2="230" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+          <line x1="550" y1="196" x2="550" y2="230" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+
+          <!-- 6 Team Members -->
+          <g transform="translate(180, 146)">
+            <circle cx="0" cy="0" r="13" fill="#ffcc80" />
+            <path d="M -11,-3 Q 0,-16 11,-3" fill="#2d3748" stroke="#2d3748" stroke-width="5"/>
+            <path d="M -14,14 L 14,14 L 10,34 L -10,34 Z" fill="#ffffff" />
+            <rect x="-16" y="12" width="32" height="26" fill="#3b82f6" rx="5" opacity="0.25"/>
+          </g>
+          <g transform="translate(250, 142)">
+            <circle cx="0" cy="0" r="13" fill="#ffd54f" />
+            <path d="M -11,-3 Q 0,-15 11,-3" fill="#795548" stroke="#795548" stroke-width="5"/>
+            <path d="M -14,14 L 14,14 L 11,36 L -11,36 Z" fill="#ffffff" />
+            <rect x="-16" y="12" width="32" height="26" fill="#10b981" rx="5" opacity="0.25"/>
+          </g>
+          <g transform="translate(320, 138)">
+            <circle cx="0" cy="0" r="14" fill="#ffcc80" />
+            <path d="M -12,-3 Q 0,-16 12,-3" fill="#1a202c" stroke="#1a202c" stroke-width="5"/>
+            <path d="M -15,15 L 15,15 L 12,40 L -12,40 Z" fill="#ffffff" />
+            <rect x="-17" y="13" width="34" height="28" fill="#ef4444" rx="5" opacity="0.25"/>
+          </g>
+          <g transform="translate(400, 138)">
+            <circle cx="0" cy="0" r="14" fill="#ffcc80" />
+            <path d="M -13,-3 Q 0,-17 13,-3" fill="#d97706" stroke="#d97706" stroke-width="5"/>
+            <path d="M -15,15 L 15,15 L 12,40 L -12,40 Z" fill="#ffffff" />
+            <rect x="-17" y="13" width="34" height="28" fill="#8b5cf6" rx="5" opacity="0.25"/>
+          </g>
+          <g transform="translate(470, 142)">
+            <circle cx="0" cy="0" r="13" fill="#ffe082" />
+            <path d="M -11,-3 Q 0,-15 11,-3" fill="#374151" stroke="#374151" stroke-width="5"/>
+            <path d="M -14,14 L 14,14 L 11,36 L -11,36 Z" fill="#ffffff" />
+            <rect x="-16" y="12" width="32" height="26" fill="#06b6d4" rx="5" opacity="0.25"/>
+          </g>
+          <g transform="translate(540, 146)">
+            <circle cx="0" cy="0" r="13" fill="#ffcc80" />
+            <path d="M -11,-3 Q 0,-16 11,-3" fill="#1f2937" stroke="#1f2937" stroke-width="5"/>
+            <path d="M -14,14 L 14,14 L 10,34 L -10,34 Z" fill="#ffffff" />
+            <rect x="-16" y="12" width="32" height="26" fill="#f59e0b" rx="5" opacity="0.25"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Quick Rules Summary (4 boxes) -->
+      <div class="rules-grid">
+        <div class="rule-box">
+          <div class="rule-icon">🎴</div>
+          <div class="rule-title">20 Barajas</div>
+          <div class="rule-desc">Exactamente 10 parejas de conceptos clave de Dirección.</div>
+        </div>
+        <div class="rule-box">
+          <div class="rule-icon">⏱️</div>
+          <div class="rule-title">10s y 5s</div>
+          <div class="rule-desc">10 segundos para la primera carta y 5 para su pareja.</div>
+        </div>
+        <div class="rule-box">
+          <div class="rule-icon">🏆</div>
+          <div class="rule-title">Momento Reto</div>
+          <div class="rule-desc">Cada acierto suma 1 punto y activa la dinámica de reto presencial.</div>
+        </div>
+        <div class="rule-box">
+          <div class="rule-icon">🔄</div>
+          <div class="rule-title">Conserva Turno</div>
+          <div class="rule-desc">El equipo que acierta conserva su turno para abrir otra pareja.</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-start-game">
+        <span>Comenzar partida</span>
+        <span>➔</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- =========================================
+       SCREEN 2: GAME BOARD SCREEN
+       ========================================= -->
+  <section class="screen" id="screen-game">
+    <!-- Top HUD Dashboard -->
+    <header class="game-dashboard">
+      <!-- Team A Scoreboard -->
+      <div class="team-badge" id="hud-team-a">
+        <div class="team-avatar team-a-avatar">A</div>
+        <div class="team-info">
+          <span class="team-name">Equipo A</span>
+          <span class="team-score" id="score-team-a">0</span>
+          <span class="turn-tag">En Turno</span>
+        </div>
+      </div>
+
+      <!-- Center Countdown & Status -->
+      <div class="center-timer-hub">
+        <div class="timer-action-msg" id="timer-instruction">
+          <span id="timer-action-icon">⏳</span>
+          <span id="timer-action-text">Abre tu primera carta — 10 s</span>
+        </div>
+        <div class="timer-bar-wrap">
+          <div class="timer-bar-fill" id="timer-bar-fill"></div>
+        </div>
+        <div class="timer-footer">
+          <span id="timer-sec-count">10.0 s</span>
+          <span id="hud-progress-pairs">Parejas: 0 / 10</span>
+        </div>
+      </div>
+
+      <!-- Team B Scoreboard -->
+      <div class="team-badge" id="hud-team-b">
+        <div class="team-avatar team-b-avatar">B</div>
+        <div class="team-info">
+          <span class="team-name">Equipo B</span>
+          <span class="team-score" id="score-team-b">0</span>
+          <span class="turn-tag">En Turno</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="dashboard-actions">
+        <button class="btn-shuffle" id="btn-shuffle-board" title="Barajear e iniciar nueva partida">
+          <span>🔀</span>
+          <span>Barajear</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Floating status toast notification -->
+    <div class="game-toast" id="game-toast">
+      <span id="toast-icon">ℹ️</span>
+      <span id="toast-text">Mensaje</span>
+    </div>
+
+    <!-- 20 Cards Grid Container (5 columns x 4 rows) -->
+    <main class="board-container">
+      <div class="cards-grid" id="cards-grid" role="region" aria-label="Tablero de 20 cartas"></div>
+
+      <!-- Animated Shuffle Overlay -->
+      <div class="shuffle-overlay" id="shuffle-overlay">
+        <div class="shuffle-stage">
+          <div class="shuffle-card-ghost" style="transform: rotate(-12deg) translate(-25px, -10px);"></div>
+          <div class="shuffle-card-ghost" style="transform: rotate(8deg) translate(20px, 5px);"></div>
+          <div class="shuffle-card-ghost" style="transform: rotate(-3deg) translate(0, 0);"></div>
+        </div>
+        <div class="shuffle-text">Preparando las 20 barajas de dirección…</div>
+      </div>
+    </main>
+  </section>
+
+  <!-- =========================================
+       MODAL 1: MOMENTO RETO (ONLY "MOMENTO RETO" EN GRANDE)
+       ========================================= -->
+  <div class="modal-backdrop" id="modal-reto" role="dialog" aria-modal="true" aria-labelledby="reto-title">
+    <div class="reto-dialog">
+      <div class="reto-star-badge">🏆</div>
+      <h2 class="reto-header-title" id="reto-title">MOMENTO RETO</h2>
+
+      <button class="btn-reto-continue" id="btn-reto-continue">
+        <span>Continuar partida</span>
+        <span>➔</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================
+       MODAL 2: CONFIRM SHUFFLE / RESTART
+       ========================================= -->
+  <div class="modal-backdrop" id="modal-confirm-shuffle" role="dialog" aria-modal="true">
+    <div class="confirm-dialog">
+      <div class="confirm-icon">🔀</div>
+      <h3 class="confirm-title">¿Barajear e iniciar una nueva partida?</h3>
+      <p class="confirm-desc">Se reiniciarán los puntos y las 10 parejas de barajas.</p>
+      <div class="confirm-btn-row">
+        <button class="btn-modal-cancel" id="btn-cancel-shuffle">Cancelar</button>
+        <button class="btn-modal-confirm" id="btn-confirm-shuffle">Barajear y reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================
+       SCREEN 3: FINAL VICTORY SCREEN
+       ========================================= -->
+  <section class="screen" id="screen-victory">
+    <div class="victory-card">
+      <div class="victory-trophy">🏆</div>
+      <h2 class="victory-title">¡Partida completada!</h2>
+      <div class="winner-announcement" id="winner-announcement">¡El Equipo A gana Misión Dirección!</div>
+
+      <div class="final-challenge-card" id="final-challenge-card">
+        <span style="font-size: 1.8rem;">🔥</span>
+        <span id="final-challenge-text">¡El Equipo A pondrá un reto al Equipo B!</span>
+      </div>
+
+      <div class="final-scoreboards">
+        <div class="final-team-card team-a">
+          <div class="final-team-name" style="color: #1976d2;">Equipo A</div>
+          <div class="final-team-points" id="final-score-a">0</div>
+          <div class="final-team-sub">parejas encontradas</div>
+        </div>
+        <div class="final-team-card team-b">
+          <div class="final-team-name" style="color: #e53935;">Equipo B</div>
+          <div class="final-team-points" id="final-score-b">0</div>
+          <div class="final-team-sub">parejas encontradas</div>
+        </div>
+      </div>
+
+      <p class="victory-total-note">Total: 10 parejas encontradas</p>
+
+      <button class="btn-primary" id="btn-play-again">
+        <span>Jugar de nuevo</span>
+        <span>🔄</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- =========================================
+       SCRIPTS: GAME ENGINE & HIGH FIDELITY ASSETS
+       ========================================= -->
+  <script>
+    /* =========================================================
+       1. DATA SPECIFICATION: 10 PAIRS (20 CARDS TOTAL)
+       ========================================================= */
+    const CONCEPTS_DATA_10 = [
+  {
+    id: "01",
+    concept: "Dirección",
+    desc: "Guiar a las personas y coordinar sus esfuerzos para alcanzar objetivos de la organización.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="dirBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8"/>
+          <stop offset="100%" stop-color="#0284c7"/>
+        </linearGradient>
+        <linearGradient id="dirRoad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#f59e0b"/>
+          <stop offset="100%" stop-color="#d97706"/>
+        </linearGradient>
+        <linearGradient id="dirSun" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fde047"/>
+          <stop offset="100%" stop-color="#f59e0b"/>
+        </linearGradient>
+      </defs>
+      <!-- Background Circle Badge -->
+      <circle cx="80" cy="55" r="48" fill="#f0f9ff" stroke="#bae6fd" stroke-width="2.5"/>
+      <!-- Mountain Summit Destination -->
+      <polygon points="50,68 80,26 110,68" fill="#cbd5e1"/>
+      <polygon points="68,44 80,26 92,44 86,48 80,42 74,48" fill="#ffffff"/>
+      <!-- Golden Sun on Horizon -->
+      <circle cx="80" cy="24" r="12" fill="url(#dirSun)" opacity="0.9"/>
+      <path d="M 80,6 L 80,10 M 96,16 L 93,19 M 64,16 L 67,19" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Glowing Winding Path / Road Forward -->
+      <path d="M 80,48 Q 95,65 72,78 Q 50,90 80,102" fill="none" stroke="url(#dirRoad)" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 80,48 Q 95,65 72,78 Q 50,90 80,102" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="4,4"/>
+      <!-- Leader on the path holding Flag -->
+      <g transform="translate(68, 62)">
+        <circle cx="0" cy="0" r="5" fill="#fbc02d"/>
+        <path d="M -4,6 L 4,6 L 3,18 L -3,18 Z" fill="#0284c7"/>
+        <!-- Arm & Banner Flag pointing ahead -->
+        <line x1="2" y1="8" x2="18" y2="0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="18,-6 32,0 18,6" fill="#ef4444"/>
+      </g>
+      <!-- Follower 1 -->
+      <g transform="translate(56, 74)">
+        <circle cx="0" cy="0" r="4" fill="#ffb74d"/>
+        <path d="M -3,5 L 3,5 L 2,15 L -2,15 Z" fill="#3b82f6"/>
+      </g>
+      <!-- Follower 2 -->
+      <g transform="translate(86, 78)">
+        <circle cx="0" cy="0" r="4" fill="#ffb74d"/>
+        <path d="M -3,5 L 3,5 L 2,15 L -2,15 Z" fill="#10b981"/>
+      </g>
+      <!-- Strategic Compass Badge in Top Left -->
+      <g transform="translate(42, 28)">
+        <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
+        <polygon points="0,-7 3,0 0,7 -3,0" fill="#ef4444"/>
+        <polygon points="0,0 3,0 0,7 -3,0" fill="#0284c7"/>
+        <circle cx="0" cy="0" r="2" fill="#ffffff"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: "02",
+    concept: "Liderazgo",
+    desc: "Influir y orientar a un grupo para avanzar hacia objetivos comunes.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lidTorch" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffedd5"/>
+          <stop offset="100%" stop-color="#fdba74"/>
+        </linearGradient>
+        <radialGradient id="flameGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fef08a"/>
+          <stop offset="50%" stop-color="#f97316"/>
+          <stop offset="100%" stop-color="#dc2626"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="#fffbeb" stroke="#fde68a" stroke-width="2.5"/>
+      <!-- Lighthouse / Beacon Radiance Rays -->
+      <path d="M 80,32 L 20,8 M 80,32 L 140,8 M 80,32 L 18,36 M 80,32 L 142,36" stroke="#fde047" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+      <!-- Inspiring Leader Silhouette -->
+      <g transform="translate(80, 52)">
+        <!-- Raised Arm with Golden Torch -->
+        <path d="M 0,22 L 0,8 L 12,-6" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+        <!-- Torch Holder -->
+        <polygon points="8,-8 18,-6 14,4 10,4" fill="#78350f"/>
+        <!-- Flaming Fire -->
+        <path d="M 13,-6 C 8,-16 2,-20 12,-30 C 22,-22 24,-12 15,-6 Z" fill="url(#flameGlow)"/>
+        <circle cx="13" cy="-14" r="4" fill="#ffffff" opacity="0.8"/>
+        <!-- Leader Head & Body -->
+        <circle cx="-2" cy="2" r="7" fill="#f59e0b"/>
+        <path d="M -9,11 L 5,11 L 3,36 L -7,36 Z" fill="#d97706"/>
+      </g>
+      <!-- Team Members inspired, looking forward -->
+      <g transform="translate(48, 76)">
+        <circle cx="0" cy="0" r="5" fill="#fcd34d"/>
+        <path d="M -4,6 L 4,6 L 3,22 L -3,22 Z" fill="#2563eb"/>
+      </g>
+      <g transform="translate(62, 72)">
+        <circle cx="0" cy="0" r="5.5" fill="#fcd34d"/>
+        <path d="M -4,7 L 4,7 L 3,24 L -3,24 Z" fill="#3b82f6"/>
+      </g>
+      <g transform="translate(98, 72)">
+        <circle cx="0" cy="0" r="5.5" fill="#fcd34d"/>
+        <path d="M -4,7 L 4,7 L 3,24 L -3,24 Z" fill="#10b981"/>
+      </g>
+      <g transform="translate(112, 76)">
+        <circle cx="0" cy="0" r="5" fill="#fcd34d"/>
+        <path d="M -4,6 L 4,6 L 3,22 L -3,22 Z" fill="#059669"/>
+      </g>
+      <!-- Star of Excellence above flame -->
+      <polygon points="93,12 95,17 100,17 96,20 98,25 93,22 88,25 90,20 86,17 91,17" fill="#f59e0b"/>
+    </svg>`
+  },
+  {
+    id: "03",
+    concept: "Motivación",
+    desc: "Impulsar la disposición y el compromiso de las personas con su trabajo y sus objetivos.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rocketBody" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f43f5e"/>
+          <stop offset="100%" stop-color="#be123c"/>
+        </linearGradient>
+        <linearGradient id="fireJet" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#fde047"/>
+          <stop offset="50%" stop-color="#f97316"/>
+          <stop offset="100%" stop-color="#dc2626"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="#fff1f2" stroke="#fecdd3" stroke-width="2.5"/>
+      <!-- Rocket Smoke Cloud Base -->
+      <circle cx="55" cy="85" r="14" fill="#e2e8f0"/>
+      <circle cx="70" cy="90" r="12" fill="#cbd5e1"/>
+      <circle cx="85" cy="86" r="15" fill="#e2e8f0"/>
+      <!-- Rocket Propulsion Flame -->
+      <polygon points="73,64 87,64 80,95" fill="url(#fireJet)"/>
+      <polygon points="76,64 84,64 80,82" fill="#ffffff"/>
+      <!-- Rocket Ship (45 deg angle upwards) -->
+      <g transform="translate(80, 46)">
+        <!-- Fins -->
+        <polygon points="-12,14 -24,20 -10,4" fill="#9f1239"/>
+        <polygon points="12,14 24,20 10,4" fill="#9f1239"/>
+        <!-- Rocket Body Fuselage -->
+        <path d="M 0,-34 C -14,-14 -14,12 0,18 C 14,12 14,-14 0,-34 Z" fill="url(#rocketBody)"/>
+        <!-- Cockpit Window with energetic pilot -->
+        <circle cx="0" cy="-6" r="7" fill="#ffffff" stroke="#9f1239" stroke-width="2"/>
+        <circle cx="0" cy="-6" r="4" fill="#38bdf8"/>
+        <!-- Tip Nosecone -->
+        <path d="M 0,-34 C -6,-25 -8,-20 0,-20 C 8,-20 6,-25 0,-34 Z" fill="#ffffff"/>
+      </g>
+      <!-- Battery 100% full icon in top-right -->
+      <g transform="translate(118, 30)">
+        <rect x="0" y="0" width="22" height="12" rx="3" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+        <rect x="22" y="3" width="3" height="6" rx="1.5" fill="#10b981"/>
+        <rect x="3" y="3" width="16" height="6" rx="1" fill="#10b981"/>
+      </g>
+      <!-- Sparks & Energy Bolts -->
+      <text x="36" y="34" font-size="18">⚡</text>
+      <text x="116" y="74" font-size="18">✨</text>
+    </svg>`
+  },
+  {
+    id: "04",
+    concept: "Comunicación",
+    desc: "Intercambiar información y construir una comprensión compartida entre las personas.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="commBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#eef2ff"/>
+          <stop offset="100%" stop-color="#e0e7ff"/>
+        </linearGradient>
+        <linearGradient id="bubbleBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6366f1"/>
+          <stop offset="100%" stop-color="#4f46e5"/>
+        </linearGradient>
+        <linearGradient id="bubbleGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#10b981"/>
+          <stop offset="100%" stop-color="#059669"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="url(#commBg)" stroke="#c7d2fe" stroke-width="2.5"/>
+      <!-- Person A (Left) -->
+      <g transform="translate(42, 62)">
+        <circle cx="0" cy="0" r="9" fill="#ffb74d"/>
+        <path d="M -7,11 L 7,11 L 5,32 L -5,32 Z" fill="#4f46e5"/>
+      </g>
+      <!-- Person B (Right) -->
+      <g transform="translate(118, 62)">
+        <circle cx="0" cy="0" r="9" fill="#ffb74d"/>
+        <path d="M -7,11 L 7,11 L 5,32 L -5,32 Z" fill="#059669"/>
+      </g>
+      <!-- Central Dynamic Dialogue Bubbles -->
+      <g transform="translate(56, 32)">
+        <path d="M 0,0 L 28,0 C 33,0 36,4 36,9 L 36,17 C 36,22 33,26 28,26 L 8,26 L 0,33 Z" fill="url(#bubbleBlue)"/>
+        <!-- Typing dots inside -->
+        <circle cx="10" cy="13" r="2.5" fill="#ffffff"/>
+        <circle cx="18" cy="13" r="2.5" fill="#ffffff"/>
+        <circle cx="26" cy="13" r="2.5" fill="#ffffff"/>
+      </g>
+      <g transform="translate(72, 46)">
+        <path d="M 32,0 L 4,0 C -1,0 -4,4 -4,9 L -4,17 C -4,22 -1,26 4,26 L 24,26 L 32,33 Z" fill="url(#bubbleGreen)"/>
+        <!-- Checkmark inside -->
+        <path d="M 8,13 L 13,18 L 22,9" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <!-- Signal / WiFi Radiance Waves connecting minds -->
+      <path d="M 68,20 Q 80,12 92,20" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M 62,14 Q 80,4 98,14" fill="none" stroke="#a5b4fc" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: "05",
+    concept: "Toma de decisiones",
+    desc: "Elegir una alternativa después de analizar una situación y sus posibles opciones.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="decBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ecfdf5"/>
+          <stop offset="100%" stop-color="#d1fae5"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="url(#decBg)" stroke="#a7f3d0" stroke-width="2.5"/>
+      <!-- The 3 Divergent Routes -->
+      <!-- Left route (Inactive) -->
+      <path d="M 80,95 L 80,68 Q 60,54 44,38" fill="none" stroke="#94a3b8" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="44" cy="38" r="9" fill="#94a3b8"/>
+      <text x="44" y="42" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">A</text>
+      <!-- Center route (Inactive) -->
+      <path d="M 80,68 L 80,26" fill="none" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="80" cy="26" r="9" fill="#94a3b8"/>
+      <text x="80" y="30" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">B</text>
+      <!-- Right chosen golden-green route (Selected Option) -->
+      <path d="M 80,95 L 80,68 Q 100,54 118,36" fill="none" stroke="#10b981" stroke-width="9" stroke-linecap="round"/>
+      <!-- Chosen Goal Badge -->
+      <circle cx="118" cy="36" r="14" fill="#10b981" stroke="#059669" stroke-width="2.5"/>
+      <path d="M 112,36 L 116,40 L 125,30" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- Decision Navigator Person with Compass in Center -->
+      <g transform="translate(80, 68)">
+        <circle cx="0" cy="0" r="12" fill="#ffffff" stroke="#f59e0b" stroke-width="3"/>
+        <polygon points="0,-9 4,0 0,9 -4,0" fill="#ef4444"/>
+        <polygon points="0,0 4,0 0,9 -4,0" fill="#1e293b"/>
+        <circle cx="0" cy="0" r="2.5" fill="#f59e0b"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: "06",
+    concept: "Delegación",
+    desc: "Asignar tareas y la autoridad necesaria para realizarlas, manteniendo el seguimiento correspondiente.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="delBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#faf5ff"/>
+          <stop offset="100%" stop-color="#f3e8ff"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="url(#delBg)" stroke="#e9d5ff" stroke-width="2.5"/>
+      <!-- Leader (Left) -->
+      <g transform="translate(46, 56)">
+        <circle cx="0" cy="0" r="9" fill="#ffb74d"/>
+        <path d="M -7,11 L 7,11 L 5,34 L -5,34 Z" fill="#7c3aed"/>
+        <!-- Outstretched arm delivering task -->
+        <path d="M 4,16 L 22,22" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <!-- Empowered Colleague (Right) -->
+      <g transform="translate(114, 56)">
+        <circle cx="0" cy="0" r="9" fill="#ffb74d"/>
+        <path d="M -7,11 L 7,11 L 5,34 L -5,34 Z" fill="#8b5cf6"/>
+        <!-- Arm receiving key / folder -->
+        <path d="M -4,16 L -20,22" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+        <!-- Thumbs up -->
+        <circle cx="12" cy="18" r="5" fill="#10b981"/>
+        <text x="12" y="21" font-size="8" fill="#fff" text-anchor="middle" font-weight="bold">✓</text>
+      </g>
+      <!-- Golden Key of Empowerment in Center -->
+      <g transform="translate(80, 48)">
+        <!-- Glowing aura -->
+        <circle cx="0" cy="0" r="16" fill="#fef08a" opacity="0.6"/>
+        <!-- Digital Briefcase / Project Folder -->
+        <rect x="-14" y="-8" width="28" height="20" rx="3" fill="#f59e0b" stroke="#b45309" stroke-width="2"/>
+        <path d="M -8,-8 L -8,-12 Q 0,-15 8,-12 L 8,-8" fill="none" stroke="#b45309" stroke-width="2"/>
+        <!-- Golden Star on briefcase -->
+        <polygon points="0,-2 2,2 7,2 3,5 5,10 0,7 -5,10 -3,5 -7,2 -2,2" fill="#ffffff"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: "07",
+    concept: "Autoridad",
+    desc: "Facultad legítima de un cargo para tomar decisiones y dar instrucciones dentro de su ámbito.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="autBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fff1f2"/>
+          <stop offset="100%" stop-color="#fee2e2"/>
+        </linearGradient>
+        <linearGradient id="goldMedal" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fde047"/>
+          <stop offset="100%" stop-color="#d97706"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="url(#autBg)" stroke="#fecaca" stroke-width="2.5"/>
+      <!-- Official Laurel Wreath / Pillar of mandate -->
+      <path d="M 44,65 C 44,38 58,26 80,24 C 102,26 116,38 116,65" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4"/>
+      <!-- Executive Seal / Badge Medallion -->
+      <!-- Red Ribbons -->
+      <polygon points="68,68 60,96 72,90 78,96 74,68" fill="#b91c1c"/>
+      <polygon points="92,68 86,96 92,90 104,96 96,68" fill="#dc2626"/>
+      <!-- Outer Starburst Seal -->
+      <circle cx="80" cy="52" r="28" fill="#dc2626" stroke="#991b1b" stroke-width="2"/>
+      <circle cx="80" cy="52" r="23" fill="url(#goldMedal)"/>
+      <circle cx="80" cy="52" r="18" fill="#b91c1c"/>
+      <!-- Emblem Crown / Star of legitimate authority -->
+      <polygon points="80,38 84,47 94,47 86,53 89,62 80,56 71,62 74,53 66,47 76,47" fill="#ffffff"/>
+      <circle cx="80" cy="52" r="3" fill="#f59e0b"/>
+    </svg>`
+  },
+  {
+    id: "08",
+    concept: "Responsabilidad",
+    desc: "Obligación de cumplir las tareas asumidas y responder por sus resultados.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="respShield" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0d9488"/>
+          <stop offset="100%" stop-color="#0f766e"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="#f0fdfa" stroke="#ccfbf1" stroke-width="2.5"/>
+      <!-- Large Solid Shield of Accountability -->
+      <path d="M 80,18 Q 110,22 110,48 C 110,72 80,94 80,94 C 80,94 50,72 50,48 Q 50,22 80,18 Z" fill="url(#respShield)" stroke="#115e59" stroke-width="3"/>
+      <!-- Inner Gold/White Core -->
+      <path d="M 80,26 Q 102,29 102,48 C 102,68 80,85 80,85 C 80,85 58,68 58,48 Q 58,29 80,26 Z" fill="#14b8a6"/>
+      <!-- Verified Checklist Card in Center of Shield -->
+      <rect x="68" y="36" width="24" height="32" rx="3" fill="#ffffff" stroke="#0f766e" stroke-width="2"/>
+      <rect x="74" y="32" width="12" height="6" rx="2" fill="#0f766e"/>
+      <!-- 3 Verified Green Checkmarks -->
+      <path d="M 72,44 L 75,47 L 81,41" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+      <line x1="84" y1="44" x2="88" y2="44" stroke="#64748b" stroke-width="2"/>
+      <path d="M 72,52 L 75,55 L 81,49" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+      <line x1="84" y1="52" x2="88" y2="52" stroke="#64748b" stroke-width="2"/>
+      <path d="M 72,60 L 75,63 L 81,57" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+      <line x1="84" y1="60" x2="88" y2="60" stroke="#64748b" stroke-width="2"/>
+    </svg>`
+  },
+  {
+    id: "09",
+    concept: "Trabajo en equipo",
+    desc: "Colaborar y complementar habilidades para lograr un resultado común.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="teamBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#eff6ff"/>
+          <stop offset="100%" stop-color="#dbeafe"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="url(#teamBg)" stroke="#bfdbfe" stroke-width="2.5"/>
+      <!-- 4 Interlocking Puzzle Pieces forming unified square -->
+      <g transform="translate(80, 55)">
+        <!-- Top-Left Piece (Blue) -->
+        <path d="M -24,-24 L 0,-24 C 4,-24 4,-16 0,-16 L 0,0 L -24,0 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="1.5"/>
+        <!-- Top-Right Piece (Yellow) -->
+        <path d="M 0,-24 L 24,-24 L 24,0 L 8,0 C 8,-4 0,-4 0,0 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+        <!-- Bottom-Left Piece (Green) -->
+        <path d="M -24,0 L 0,0 L 0,24 L -24,24 Z" fill="#10b981" stroke="#047857" stroke-width="1.5"/>
+        <!-- Bottom-Right Piece (Pink) -->
+        <path d="M 0,0 L 24,0 L 24,24 L 0,24 Z" fill="#ec4899" stroke="#be185d" stroke-width="1.5"/>
+        <!-- Center Spark of Synergy -->
+        <circle cx="0" cy="0" r="7" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+        <text x="0" y="3" font-size="8" text-anchor="middle" font-weight="bold" fill="#f59e0b">★</text>
+      </g>
+      <!-- Hands joining in from 4 corners -->
+      <path d="M 38,32 L 54,42" stroke="#ffb74d" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 122,32 L 106,42" stroke="#ffb74d" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 38,78 L 54,68" stroke="#ffb74d" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 122,78 L 106,68" stroke="#ffb74d" stroke-width="5" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: "10",
+    concept: "Resolución de conflictos",
+    desc: "Abordar diferencias de forma constructiva y buscar acuerdos viables.",
+    svg: `<svg viewBox="0 0 160 110" class="card-svg-icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="resBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f0fdf4"/>
+          <stop offset="100%" stop-color="#dcfce7"/>
+        </linearGradient>
+      </defs>
+      <circle cx="80" cy="55" r="48" fill="url(#resBg)" stroke="#bbf7d0" stroke-width="2.5"/>
+      <!-- The Tangled Knot turning into a straight harmonious line above -->
+      <path d="M 40,30 Q 55,20 65,34 Q 75,44 80,30 Q 85,16 95,30 L 120,30" fill="none" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- Golden Star / Olive leaf of agreement -->
+      <polygon points="80,16 83,23 90,23 85,28 87,35 80,31 73,35 75,28 70,23 77,23" fill="#f59e0b"/>
+      <!-- The Firm Handshake in Center -->
+      <g transform="translate(80, 62)">
+        <!-- Left Sleeve (Blue) -->
+        <rect x="-42" y="-10" width="22" height="20" rx="4" fill="#2563eb"/>
+        <!-- Left Arm -->
+        <path d="M -20,-6 L -4,-6 L 4,2 L -6,8 L -20,6 Z" fill="#ffb74d"/>
+        <!-- Right Sleeve (Green) -->
+        <rect x="20" y="-10" width="22" height="20" rx="4" fill="#059669"/>
+        <!-- Right Arm -->
+        <path d="M 20,-6 L 4,-6 L -4,2 L 6,8 L 20,6 Z" fill="#ffb74d"/>
+        <!-- Clasped Hands Center -->
+        <rect x="-8" y="-4" width="16" height="12" rx="4" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+        <!-- Heart of goodwill -->
+        <circle cx="0" cy="-14" r="5" fill="#ef4444"/>
+      </g>
+    </svg>`
+  }
+];
+
+    /* Card Back SVG Emblem */
+    const CARD_BACK_EMBLEM_SVG = `
+      <svg viewBox="0 0 80 80" class="card-back-emblem" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,215,0,0.5)" stroke-width="2.5" stroke-dasharray="4,4"/>
+        <circle cx="40" cy="40" r="28" fill="#1e3a5f"/>
+        <path d="M 30,34 C 30,24 35,20 40,20 C 45,20 50,24 50,34 C 50,40 45,44 44,48 L 36,48 C 35,44 30,40 30,34 Z" fill="#ffd54f"/>
+        <rect x="36" y="49" width="8" height="3" rx="1.5" fill="#cfd8dc"/>
+        <rect x="37" y="53" width="6" height="2.5" rx="1" fill="#90a4ae"/>
+        <path d="M 37,28 C 34,28 33,32 37,35 C 37,38 34,39 37,42" fill="none" stroke="#e65100" stroke-width="1.6"/>
+        <path d="M 43,28 C 46,28 47,32 43,35 C 43,38 46,39 43,42" fill="none" stroke="#e65100" stroke-width="1.6"/>
+      </svg>
+    `;
+
+    /* =========================================================
+       2. SYNTHESIZED WEB AUDIO API SYSTEM
+       ========================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playFlip() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        } catch (e) {}
+      }
+
+      playMatch() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, now + i * 0.07);
+            gain.gain.linearRampToValueAtTime(0.2, now + i * 0.07 + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.07);
+            osc.stop(now + i * 0.07 + 0.36);
+          });
+        } catch (e) {}
+      }
+
+      playMismatch() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.linearRampToValueAtTime(180, now + 0.22);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.23);
+        } catch (e) {}
+      }
+
+      playTick() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = 800;
+          gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.05);
+        } catch (e) {}
+      }
+
+      playTimeout() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(160, now + 0.15);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.36);
+        } catch (e) {}
+      }
+
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const notes = [
+            { f: 523.25, d: 0.15 },
+            { f: 659.25, d: 0.15 },
+            { f: 783.99, d: 0.15 },
+            { f: 1046.50, d: 0.45 }
+          ];
+          let cur = this.ctx.currentTime;
+          notes.forEach(n => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = n.f;
+            gain.gain.setValueAtTime(0.25, cur);
+            gain.gain.exponentialRampToValueAtTime(0.001, cur + n.d);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(cur);
+            osc.stop(cur + n.d);
+            cur += n.d;
+          });
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* =========================================================
+       3. CONFETTI & PARTICLES ENGINE
+       ========================================================= */
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animationFrame = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function spawnConfetti(count = 60) {
+      const colors = ['#f59e0b', '#3b82f6', '#ec4899', '#10b981', '#8b5cf6', '#ef4444', '#ffd54f'];
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 350,
+          y: canvas.height / 3 + (Math.random() - 0.5) * 120,
+          w: Math.random() * 11 + 6,
+          h: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 14,
+          vy: Math.random() * -12 - 4,
+          rot: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 12,
+          opacity: 1,
+          decay: Math.random() * 0.015 + 0.008
+        });
+      }
+      if (!animationFrame) runParticles();
+    }
+
+    function runParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35;
+        p.rot += p.rotSpeed;
+        p.opacity -= p.decay;
+
+        if (p.opacity <= 0 || p.y > canvas.height) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.opacity;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+
+      if (particles.length > 0) {
+        animationFrame = requestAnimationFrame(runParticles);
+      } else {
+        animationFrame = null;
+      }
+    }
+
+    /* =========================================================
+       4. GAME STATE (20 CARDS = 10 PAIRS)
+       ========================================================= */
+    const TOTAL_PAIRS = 10;
+    const State = {
+      PHASE: 'INIT',
+      currentTeam: 'A',
+      scoreA: 0,
+      scoreB: 0,
+      pairsFound: 0,
+      cards: [],
+      firstPick: null,
+      secondPick: null,
+      timerTotal: 10,
+      timerRemaining: 10,
+      timerStartTimestamp: null,
+      timerAnimationId: null,
+      lastTickSec: -1,
+      isPausedForModal: false
+    };
+
+    /* Sound mute button */
+    const btnToggleSound = document.getElementById('btn-toggle-sound');
+    const soundIcon = document.getElementById('sound-icon');
+    btnToggleSound.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      soundIcon.textContent = sound.muted ? '🔇' : '🔊';
+    });
+
+    /* Screens */
+    const screenStart = document.getElementById('screen-start');
+    const screenGame = document.getElementById('screen-game');
+    const screenVictory = document.getElementById('screen-victory');
+
+    function showScreen(name) {
+      screenStart.classList.remove('active');
+      screenGame.classList.remove('active');
+      screenVictory.classList.remove('active');
+      if (name === 'start') screenStart.classList.add('active');
+      if (name === 'game') screenGame.classList.add('active');
+      if (name === 'victory') screenVictory.classList.add('active');
+    }
+
+    /* UI Elements */
+    const cardsGrid = document.getElementById('cards-grid');
+    const scoreTeamA = document.getElementById('score-team-a');
+    const scoreTeamB = document.getElementById('score-team-b');
+    const hudTeamA = document.getElementById('hud-team-a');
+    const hudTeamB = document.getElementById('hud-team-b');
+    const timerInstruction = document.getElementById('timer-instruction');
+    const timerActionText = document.getElementById('timer-action-text');
+    const timerBarFill = document.getElementById('timer-bar-fill');
+    const timerSecCount = document.getElementById('timer-sec-count');
+    const hudProgressPairs = document.getElementById('hud-progress-pairs');
+    const shuffleOverlay = document.getElementById('shuffle-overlay');
+    const gameToast = document.getElementById('game-toast');
+    const toastText = document.getElementById('toast-text');
+
+    /* Toast Notification */
+    let toastTimeout = null;
+    function showToast(msg, duration = 1800) {
+      toastText.textContent = msg;
+      gameToast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        gameToast.classList.remove('show');
+      }, duration);
+    }
+
+    /* Build 20 Cards (10 Pairs) */
+    function buildDeck20() {
+      const deck = [];
+      CONCEPTS_DATA_10.forEach((conceptItem) => {
+        deck.push({
+          uid: `${conceptItem.id}-1`,
+          pairId: conceptItem.id,
+          concept: conceptItem.concept,
+          desc: conceptItem.desc,
+          svg: conceptItem.svg,
+          isFlipped: false,
+          isMatched: false,
+          owner: null,
+          domElement: null
+        });
+        deck.push({
+          uid: `${conceptItem.id}-2`,
+          pairId: conceptItem.id,
+          concept: conceptItem.concept,
+          desc: conceptItem.desc,
+          svg: conceptItem.svg,
+          isFlipped: false,
+          isMatched: false,
+          owner: null,
+          domElement: null
+        });
+      });
+      return deck;
+    }
+
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function updateHUD() {
+      scoreTeamA.textContent = State.scoreA;
+      scoreTeamB.textContent = State.scoreB;
+      hudProgressPairs.textContent = `Parejas: ${State.pairsFound} / ${TOTAL_PAIRS}`;
+
+      if (State.currentTeam === 'A') {
+        hudTeamA.classList.add('team-a-active');
+        hudTeamB.classList.remove('team-b-active');
+      } else {
+        hudTeamB.classList.add('team-b-active');
+        hudTeamA.classList.remove('team-a-active');
+      }
+    }
+
+    /* Render 20 Cards into DOM Grid with Robust Front View */
+    function renderBoardDOM() {
+      cardsGrid.innerHTML = '';
+      State.cards.forEach((card, index) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'card-wrap';
+        wrap.setAttribute('tabindex', '0');
+        wrap.setAttribute('role', 'button');
+        wrap.setAttribute('aria-label', `Baraja número ${index + 1}`);
+
+        wrap.innerHTML = `
+          <div class="card-inner">
+            <div class="card-face card-back">
+              <div class="card-back-pattern"></div>
+              ${CARD_BACK_EMBLEM_SVG}
+              <div class="card-back-text">Misión Dirección</div>
+            </div>
+            <div class="card-face card-front">
+              <div class="card-front-tag">Dirección</div>
+              <div class="card-illustration-wrap">
+                ${card.svg}
+              </div>
+              <div class="card-concept-name">${card.concept}</div>
+            </div>
+          </div>
+        `;
+
+        wrap.addEventListener('click', () => handleCardSelection(card));
+        wrap.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardSelection(card);
+          }
+        });
+
+        card.domElement = wrap;
+        cardsGrid.appendChild(wrap);
+      });
+    }
+
+    /* High Precision Timer with RequestAnimationFrame */
+    function startTimer(seconds, phaseLabel) {
+      stopTimer();
+      State.timerTotal = seconds;
+      State.timerRemaining = seconds;
+      State.timerStartTimestamp = performance.now();
+      State.lastTickSec = Math.ceil(seconds);
+
+      timerActionText.textContent = `${phaseLabel} — ${seconds} s`;
+      timerSecCount.textContent = `${seconds.toFixed(1)} s`;
+      timerBarFill.style.width = '100%';
+      timerBarFill.classList.remove('urgent');
+
+      function tick(now) {
+        if (State.isPausedForModal) {
+          State.timerAnimationId = requestAnimationFrame(tick);
+          return;
+        }
+
+        const elapsed = (now - State.timerStartTimestamp) / 1000;
+        State.timerRemaining = Math.max(0, State.timerTotal - elapsed);
+
+        const pct = (State.timerRemaining / State.timerTotal) * 100;
+        timerBarFill.style.width = `${pct}%`;
+        timerSecCount.textContent = `${State.timerRemaining.toFixed(1)} s`;
+
+        if (State.timerRemaining <= 3.0) {
+          timerBarFill.classList.add('urgent');
+          const wholeSec = Math.ceil(State.timerRemaining);
+          if (wholeSec !== State.lastTickSec && wholeSec > 0) {
+            State.lastTickSec = wholeSec;
+            sound.playTick();
+          }
+        }
+
+        if (State.timerRemaining <= 0) {
+          stopTimer();
+          handleTimeout();
+        } else {
+          State.timerAnimationId = requestAnimationFrame(tick);
+        }
+      }
+
+      State.timerAnimationId = requestAnimationFrame(tick);
+    }
+
+    function stopTimer() {
+      if (State.timerAnimationId) {
+        cancelAnimationFrame(State.timerAnimationId);
+        State.timerAnimationId = null;
+      }
+    }
+
+    function pauseTimer() {
+      stopTimer();
+    }
+
+    function resumeTimer() {
+      if (State.timerRemaining > 0) {
+        State.timerStartTimestamp = performance.now() - (State.timerTotal - State.timerRemaining) * 1000;
+        function tick(now) {
+          if (State.isPausedForModal) {
+            State.timerAnimationId = requestAnimationFrame(tick);
+            return;
+          }
+          const elapsed = (now - State.timerStartTimestamp) / 1000;
+          State.timerRemaining = Math.max(0, State.timerTotal - elapsed);
+          const pct = (State.timerRemaining / State.timerTotal) * 100;
+          timerBarFill.style.width = `${pct}%`;
+          timerSecCount.textContent = `${State.timerRemaining.toFixed(1)} s`;
+          if (State.timerRemaining <= 3.0) {
+            timerBarFill.classList.add('urgent');
+            const wholeSec = Math.ceil(State.timerRemaining);
+            if (wholeSec !== State.lastTickSec && wholeSec > 0) {
+              State.lastTickSec = wholeSec;
+              sound.playTick();
+            }
+          }
+          if (State.timerRemaining <= 0) {
+            stopTimer();
+            handleTimeout();
+          } else {
+            State.timerAnimationId = requestAnimationFrame(tick);
+          }
+        }
+        State.timerAnimationId = requestAnimationFrame(tick);
+      }
+    }
+
+    function handleTimeout() {
+      sound.playTimeout();
+      const nextTeam = State.currentTeam === 'A' ? 'B' : 'A';
+
+      if (State.PHASE === 'PICK_1') {
+        showToast(`Tiempo agotado. Turno del Equipo ${nextTeam}`);
+        switchTurn(nextTeam);
+      } else if (State.PHASE === 'PICK_2') {
+        showToast(`Tiempo agotado. Turno del Equipo ${nextTeam}`);
+        if (State.firstPick) {
+          State.firstPick.isFlipped = false;
+          State.firstPick.domElement.classList.remove('flipped');
+          State.firstPick = null;
+        }
+        switchTurn(nextTeam);
+      }
+    }
+
+    function switchTurn(team) {
+      State.currentTeam = team;
+      updateHUD();
+      State.firstPick = null;
+      State.secondPick = null;
+      State.PHASE = 'PICK_1';
+      startTimer(10, "Abre tu primera carta");
+    }
+
+    /* Handle Card Selection with Guaranteed Flip Visuals */
+    function handleCardSelection(card) {
+      if (card.isMatched || card.isFlipped) return;
+      if (State.PHASE !== 'PICK_1' && State.PHASE !== 'PICK_2') return;
+      if (State.timerRemaining <= 0) return;
+
+      if (State.PHASE === 'PICK_1') {
+        stopTimer();
+        State.PHASE = 'FLIPPING_1';
+        card.isFlipped = true;
+        card.domElement.classList.add('flipped');
+        sound.playFlip();
+        State.firstPick = card;
+
+        setTimeout(() => {
+          if (State.PHASE === 'FLIPPING_1') {
+            State.PHASE = 'PICK_2';
+            startTimer(5, "Encuentra su pareja");
+          }
+        }, 260);
+
+      } else if (State.PHASE === 'PICK_2') {
+        stopTimer();
+        State.PHASE = 'COMPARING';
+        card.isFlipped = true;
+        card.domElement.classList.add('flipped');
+        sound.playFlip();
+        State.secondPick = card;
+
+        setTimeout(() => {
+          checkPairMatch();
+        }, 320);
+      }
+    }
+
+    function checkPairMatch() {
+      const card1 = State.firstPick;
+      const card2 = State.secondPick;
+      if (!card1 || !card2) return;
+
+      if (card1.pairId === card2.pairId) {
+        sound.playMatch();
+        spawnConfetti(50);
+
+        card1.isMatched = true;
+        card2.isMatched = true;
+        card1.owner = State.currentTeam;
+        card2.owner = State.currentTeam;
+
+        const ownerClass = State.currentTeam === 'A' ? 'matched-team-a' : 'matched-team-b';
+        card1.domElement.classList.add('matched', ownerClass);
+        card2.domElement.classList.add('matched', ownerClass);
+
+        const seal1 = document.createElement('div');
+        seal1.className = 'match-owner-seal';
+        seal1.textContent = State.currentTeam;
+        card1.domElement.querySelector('.card-front').appendChild(seal1);
+
+        const seal2 = document.createElement('div');
+        seal2.className = 'match-owner-seal';
+        seal2.textContent = State.currentTeam;
+        card2.domElement.querySelector('.card-front').appendChild(seal2);
+
+        if (State.currentTeam === 'A') {
+          State.scoreA += 1;
+        } else {
+          State.scoreB += 1;
+        }
+        State.pairsFound += 1;
+        updateHUD();
+
+        State.firstPick = null;
+        State.secondPick = null;
+
+        openRetoModal();
+
+      } else {
+        sound.playMismatch();
+        showToast("No coinciden. Observa y recuerda.", 1300);
+
+        setTimeout(() => {
+          card1.isFlipped = false;
+          card2.isFlipped = false;
+          card1.domElement.classList.remove('flipped');
+          card2.domElement.classList.remove('flipped');
+
+          const nextTeam = State.currentTeam === 'A' ? 'B' : 'A';
+          switchTurn(nextTeam);
+        }, 1300);
+      }
+    }
+
+    /* =========================================================
+       5. MOMENTO RETO MODAL
+       STRICT SPECIFICATION: ONLY "Momento reto",
+       NEITHER "equipo a" NOR "equipo b"
+       ========================================================= */
+    const modalReto = document.getElementById('modal-reto');
+    const btnRetoContinue = document.getElementById('btn-reto-continue');
+
+    function openRetoModal() {
+      State.PHASE = 'RETO';
+      stopTimer();
+      document.getElementById('btn-shuffle-board').disabled = true;
+
+      modalReto.classList.add('active');
+      btnRetoContinue.focus();
+    }
+
+    btnRetoContinue.addEventListener('click', () => {
+      modalReto.classList.remove('active');
+      document.getElementById('btn-shuffle-board').disabled = false;
+
+      // 10 pairs completion check
+      if (State.pairsFound === TOTAL_PAIRS) {
+        showVictoryScreen();
+      } else {
+        State.PHASE = 'PICK_1';
+        startTimer(10, "Abre tu primera carta");
+      }
+    });
+
+    /* =========================================================
+       6. SHUFFLE & RESTART SYSTEM
+       ========================================================= */
+    const btnShuffleBoard = document.getElementById('btn-shuffle-board');
+    const modalConfirmShuffle = document.getElementById('modal-confirm-shuffle');
+    const btnCancelShuffle = document.getElementById('btn-cancel-shuffle');
+    const btnConfirmShuffle = document.getElementById('btn-confirm-shuffle');
+
+    btnShuffleBoard.addEventListener('click', () => {
+      if (State.PHASE !== 'PICK_1' && State.PHASE !== 'PICK_2') return;
+      State.isPausedForModal = true;
+      pauseTimer();
+      modalConfirmShuffle.classList.add('active');
+    });
+
+    btnCancelShuffle.addEventListener('click', () => {
+      modalConfirmShuffle.classList.remove('active');
+      State.isPausedForModal = false;
+      resumeTimer();
+    });
+
+    btnConfirmShuffle.addEventListener('click', () => {
+      modalConfirmShuffle.classList.remove('active');
+      State.isPausedForModal = false;
+      startNewGame();
+    });
+
+    /* Start New Game: Exactly 20 cards (10 pairs) */
+    function startNewGame() {
+      stopTimer();
+      State.scoreA = 0;
+      State.scoreB = 0;
+      State.pairsFound = 0;
+      State.currentTeam = 'A';
+      State.firstPick = null;
+      State.secondPick = null;
+      updateHUD();
+
+      showScreen('game');
+      document.getElementById('btn-shuffle-board').disabled = true;
+
+      State.cards = shuffleArray(buildDeck20());
+      renderBoardDOM();
+
+      State.PHASE = 'SHUFFLE';
+      shuffleOverlay.classList.add('active');
+      sound.playFlip();
+
+      setTimeout(() => {
+        shuffleOverlay.classList.remove('active');
+        document.getElementById('btn-shuffle-board').disabled = false;
+        State.PHASE = 'PICK_1';
+        startTimer(10, "Abre tu primera carta");
+      }, 2100);
+    }
+
+    /* =========================================================
+       7. FINAL VICTORY SCREEN
+       ========================================================= */
+    const winnerAnnouncement = document.getElementById('winner-announcement');
+    const finalScoreA = document.getElementById('final-score-a');
+    const finalScoreB = document.getElementById('final-score-b');
+    const btnPlayAgain = document.getElementById('btn-play-again');
+
+    function showVictoryScreen() {
+      State.PHASE = 'VICTORY';
+      sound.playVictory();
+      spawnConfetti(120);
+
+      finalScoreA.textContent = State.scoreA;
+      finalScoreB.textContent = State.scoreB;
+
+      const finalChallengeText = document.getElementById('final-challenge-text');
+
+      if (State.scoreA > State.scoreB) {
+        winnerAnnouncement.textContent = "¡El Equipo A gana Misión Dirección!";
+        winnerAnnouncement.className = "winner-announcement winner-a";
+        finalChallengeText.textContent = "¡El Equipo A pondrá un reto al Equipo B!";
+      } else if (State.scoreB > State.scoreA) {
+        winnerAnnouncement.textContent = "¡El Equipo B gana Misión Dirección!";
+        winnerAnnouncement.className = "winner-announcement winner-b";
+        finalChallengeText.textContent = "¡El Equipo B pondrá un reto al Equipo A!";
+      } else {
+        winnerAnnouncement.textContent = "¡Empate en Misión Dirección!";
+        winnerAnnouncement.className = "winner-announcement winner-tie";
+        finalChallengeText.textContent = "¡Ambos equipos se pondrán un reto mutuo!";
+      }
+
+      showScreen('victory');
+    }
+
+    btnPlayAgain.addEventListener('click', () => {
+      startNewGame();
+    });
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      sound.init();
+      startNewGame();
+    });
+  </script>
+</body>
+</html>

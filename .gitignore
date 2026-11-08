@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build intermediates
+build/
+dist/
+
+# Archive backups
+Backup.zip
+*.zip
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# System files
+.DS_Store
+Thumbs.db
